@@ -32,6 +32,7 @@ if not GEMINI_API_KEY:
 
 # Configure Google Gemini
 genai.configure(api_key=GEMINI_API_KEY)
+# Use the vision-capable model
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Farming advisor system prompt
@@ -46,7 +47,6 @@ IMPORTANT GUIDELINES:
 - Use simple, clear language that farmers can easily understand.
 - For image analysis, focus on identifying crops, diseases, pests, soil conditions, or farming equipment.
 - Provide solutions that are cost-effective and accessible to small-scale farmers.
-- Make responses as concise and crisp as possible.
 
 Remember: You are here to help farmers grow better crops and improve their agricultural practices."""
 
@@ -134,8 +134,14 @@ async def analyze_farming_image(
     Analyze farming/crop images and provide advice
     """
     try:
+        print(f"=== IMAGE ANALYSIS REQUEST ===")
+        print(f"File name: {file.filename}")
+        print(f"Content type: {file.content_type}")
+        print(f"Prompt: {prompt}")
+        
         # Validate file type
         if not file.content_type.startswith('image/'):
+            print(f"Invalid file type: {file.content_type}")
             return APIResponse(
                 success=False,
                 response="",
@@ -144,21 +150,29 @@ async def analyze_farming_image(
         
         # Read and process the image
         image_data = await file.read()
+        print(f"Image data size: {len(image_data)} bytes")
+        
         image = Image.open(io.BytesIO(image_data))
+        print(f"Image processed: {image.size}, mode: {image.mode}")
         
         # Combine system prompt with user prompt for image analysis
         full_prompt = f"{FARMING_SYSTEM_PROMPT}\n\nFarmer's Question: {prompt}\n\nPlease analyze the attached image and provide specific farming advice based on what you observe."
         
+        print("Sending to Gemini with image...")
         # Generate response with image analysis
         response = model.generate_content([full_prompt, image])
         
+        print(f"Gemini response received: {len(response.text) if response.text else 0} characters")
+        
         if not response.text:
+            print("No response text from Gemini")
             return APIResponse(
                 success=False,
                 response="",
                 error="Could not analyze the image. Please try again."
             )
         
+        print("Returning successful response")
         return APIResponse(
             success=True,
             response=response.text,
@@ -167,10 +181,13 @@ async def analyze_farming_image(
         
     except Exception as e:
         print(f"Error in analyze_farming_image: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         return APIResponse(
             success=False,
             response="",
-            error="Sorry, I couldn't process your image. Please try again with a clear farming-related image."
+            error=f"Sorry, I couldn't process your image. Error: {str(e)}"
         )
 
 # Ping endpoint for monitoring
@@ -182,4 +199,3 @@ async def ping():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
