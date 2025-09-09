@@ -46,6 +46,7 @@ IMPORTANT GUIDELINES:
 - Use simple, clear language that farmers can easily understand.
 - For image analysis, focus on identifying crops, diseases, pests, soil conditions, or farming equipment.
 - Provide solutions that are cost-effective and accessible to small-scale farmers.
+- Make responses as concise and crisp as possible.
 
 Remember: You are here to help farmers grow better crops and improve their agricultural practices."""
 
@@ -181,3 +182,4 @@ async def ping():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
